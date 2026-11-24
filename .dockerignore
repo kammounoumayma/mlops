@@ -1,0 +1,11 @@
+
+venv/
+.venv/
+__pycache__/
+*.pyc
+.git/
+mlruns/
+mlartifacts/
+mlflow.db
+mlflow_backup.db
+*.csv

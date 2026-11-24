@@ -1,32 +1,46 @@
 
-# ===== 1. Importer les bibliothèques =====
-
+import os
 from typing import Literal
 
 import mlflow
 import mlflow.sklearn
 import pandas as pd
-
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-
-# ===== 2. Créer l'application FastAPI =====
-
+# =====================================
+# 1. Création de l'application FastAPI
+# =====================================
 app = FastAPI(title="API Churn")
 
 
-# ===== 3. Charger le modèle champion =====
+# =====================================
+# 2. Configuration MLflow
+# =====================================
+TRACKING_URI = os.getenv(
+    "MLFLOW_TRACKING_URI",
+    "sqlite:///mlflow.db"
+)
 
-mlflow.set_tracking_uri("sqlite:///mlflow.db")
-
-model = mlflow.sklearn.load_model(
+MODEL_URI = os.getenv(
+    "MODEL_URI",
     "models:/churn-model@champion"
 )
 
+mlflow.set_tracking_uri(TRACKING_URI)
 
-# ===== 4. Définir les données du client =====
 
+# =====================================
+# 3. Chargement du modèle champion
+# =====================================
+model = mlflow.sklearn.load_model(MODEL_URI)
+
+print(f"Modèle chargé depuis : {MODEL_URI}")
+
+
+# =====================================
+# 4. Définition des données du client
+# =====================================
 class Client(BaseModel):
     age: int
     salaire: float
@@ -35,25 +49,27 @@ class Client(BaseModel):
     consommation: float
 
 
-# ===== 5. Route GET /health =====
-
+# =====================================
+# 5. Endpoint GET /health
+# =====================================
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
 
-# ===== 6. Route POST /predict =====
-
+# =====================================
+# 6. Endpoint POST /predict
+# =====================================
 @app.post("/predict")
 def predict(client: Client):
 
-    # Convertir le client en DataFrame
+    # Transformer les données en DataFrame
     ligne = pd.DataFrame([client.model_dump()])
 
-    # Encoder l'abonnement
+    # Encoder les variables catégorielles
     ligne = pd.get_dummies(ligne)
 
-    # Respecter les colonnes attendues par le modèle
+    # Respecter les colonnes du modèle entraîné
     ligne = ligne.reindex(
         columns=model.feature_names_in_,
         fill_value=0
@@ -62,7 +78,6 @@ def predict(client: Client):
     # Effectuer la prédiction
     resultat = int(model.predict(ligne)[0])
 
-    # Retourner le résultat
     return {
         "churn": resultat,
         "message": (

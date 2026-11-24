@@ -1,8 +1,21 @@
+﻿
 venv/
 .venv/
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
+
+# MLflow
 mlflow.db
+mlflow_backup.db
 mlruns/
 mlartifacts/
+
+# Modeles
+model/
+model.pkl
+
+# Secrets
+token
+.env
+.env.*
